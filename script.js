@@ -545,7 +545,7 @@
     }
 
     /* ================= Kamera ================= */
-    var cam = { mode: 'stream', interval: 3000, run: false, want: false, timer: 0, lastFrame: null, retry: 0, pre: null };
+    var cam = { mode: 'stream', interval: 3000, run: false, want: false, timer: 0, lastFrame: null, retry: 0, pre: null, watch: 0, live: false };
     var camimg = $('#camimg'), camstate = $('#camstate');
     var CAMICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
     function camMsg(title, text) {
@@ -561,10 +561,10 @@
     function camOk() { camimg.hidden = false; camstate.hidden = true; $('#livebadge').hidden = false; }
     function camFail() {
         /* Stream ESP32-CAM sering putus sesaat: coba sambung ulang otomatis sebelum menyerah. */
-        if (cam.run && cam.retry < 5) {
+        if (cam.run && cam.retry < 6) {
             cam.retry++; clearTimeout(cam.timer);
-            camMsg('Menyambung ulang…', 'Percobaan ' + cam.retry + ' dari 5.');
-            cam.timer = setTimeout(function () { if (cam.run) camLoad(); }, 800 * cam.retry);
+            camMsg('Menyambung ulang…', 'Percobaan ' + cam.retry + ' dari 6.');
+            cam.timer = setTimeout(function () { if (cam.run) camLoad(); }, 300);
             return;
         }
         cam.run = false; clearTimeout(cam.timer);
@@ -574,7 +574,7 @@
             : 'Pastikan satu jaringan dengan kamera, IP benar, dan tidak ada tab lain yang sedang menonton stream.');
     }
     function camStop() {
-        cam.run = false; clearTimeout(cam.timer);
+        cam.run = false; clearTimeout(cam.timer); clearTimeout(cam.watch);
         if (cam.pre) { cam.pre.onload = null; cam.pre.onerror = null; cam.pre.src = ''; cam.pre = null; }
         camimg.onload = null; camimg.onerror = null;
         /* mengosongkan src menutup koneksi stream, supaya ESP32-CAM tidak tertahan */
@@ -596,24 +596,39 @@
         im.src = camUrl('/capture');
     }
     function camLoad() {
-        if (cam.mode === 'stream') {
+        clearTimeout(cam.watch);
+        if (cam.mode !== 'stream') { camimg.onerror = null; camimg.onload = null; camNextPhoto(); return; }
+        /* 1) satu foto cepat dulu, supaya gambar langsung tampil selagi stream tersambung.
+           2) lalu pindah ke stream. Gambar foto tetap terlihat sampai frame stream pertama datang. */
+        var im = new Image(); cam.pre = im; im.decoding = 'async';
+        function openStream() {
+            if (!cam.run) return;
             camimg.onerror = camFail;
-            camimg.onload = function () { cam.retry = 0; camOk(); };
+            cam.live = false;
+            camimg.onload = function () { clearTimeout(cam.watch); cam.live = true; cam.retry = 0; camOk(); };
             camimg.decoding = 'async';
             camimg.src = camUrl('/stream');
-        } else {
-            camimg.onerror = null; camimg.onload = null;
-            camNextPhoto();
+            /* sambungan macet >5 detik: batalkan dan ulangi dengan koneksi baru */
+            cam.watch = setTimeout(function () { if (cam.run && !cam.live) camFail(); }, 5000);
         }
+        im.onload = function () {
+            if (!cam.run || cam.pre !== im) return;
+            camimg.src = im.src; camOk();
+            setTimeout(openStream, 60);
+        };
+        im.onerror = function () { if (cam.run && cam.pre === im) openStream(); };
+        im.src = camUrl('/capture');
+        /* kalau foto cepat tidak datang dalam 2 detik, langsung buka stream */
+        cam.watch = setTimeout(function () { if (cam.run && cam.pre === im && !camimg.naturalWidth) { im.onload = null; im.onerror = null; im.src = ''; openStream(); } }, 2000);
     }
     function camStart() {
         if (!S.camIp) { camIdle(); return; }
-        camStop(); cam.run = true; cam.want = true; cam.retry = 0;
+        camStop(); cam.run = true; cam.want = true; cam.retry = 0; cam.live = false;
         camMsg('Menghubungkan kamera…', 'Memuat dari ' + S.camIp + '.');
         $('#camOff').hidden = false; updatePortalLink();
         camLoad();
     }
-    function camEnter() { measureView(); $('#camip').value = S.camIp || ''; $('#portalip').value = S.portalIp || ''; updatePortalLink(); if (cam.want && S.camIp) camStart(); else if (!cam.run) camIdle(); renderGallery(); }
+    function camEnter() { measureView(); $('#camip').value = S.camIp || ''; $('#portalip').value = S.portalIp || ''; updatePortalLink(); if (S.camIp && !cam.run && cam.want !== false) camStart(); else if (!cam.run) camIdle(); renderGallery(); }
     function camLeave() {
         exitFull();
         try {
