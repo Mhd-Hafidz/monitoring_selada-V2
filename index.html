@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Selada Keriting Monitor</title>
+    <meta name="claude:viewport-fit-sides" content="cover">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="locked">
+    <div class="login" id="login" role="dialog" aria-labelledby="loginTitle">
+        <div class="logincard">
+            <div class="brand">
+                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 27C5 14 12 5 28 5c0 16-9 23-21 23" />
+                    <path d="M5 27c5-8 9-12 15-16" />
+                </svg>
+                <div>
+                    <h1 id="loginTitle">Selada Keriting</h1>
+                    <p>Kelompok 6 · Botanic Sync</p>
+                </div>
+            </div>
+            <p class="hint">Masuk untuk membuka dashboard pemantauan.</p>
+            <form class="loginform" id="loginForm" novalidate>
+                <div><label class="label" for="loginEmail">Email</label><input type="email" id="loginEmail"
+                        autocomplete="username" inputmode="email" placeholder="admin@gmail.com" required></div>
+                <div><label class="label" for="loginPass">Kata sandi</label>
+                    <div class="passwrap"><input type="password" id="loginPass" autocomplete="current-password"
+                            placeholder="Kata sandi" required><button type="button" id="loginEye"
+                            aria-label="Tampilkan kata sandi" aria-pressed="false">Tampil</button></div>
+                </div>
+                <label class="remember"><input type="checkbox" id="loginRemember"> Ingat saya di browser ini</label>
+                <p class="msg err" id="loginMsg" role="alert"></p>
+                <button class="btn" type="submit">Masuk</button>
+            </form>
+        </div>
+    </div>
+    <div class="shell">
+        <aside class="side" id="side">
+            <div class="sidetop">
+                <div class="brand">
+                    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 27C5 14 12 5 28 5c0 16-9 23-21 23" />
+                        <path d="M5 27c5-8 9-12 15-16" />
+                    </svg>
+                    <div>
+                        <h1>Selada Keriting</h1>
+                        <p>Kelompok 6 · Botanic Sync</p>
+                    </div>
+                </div>
+                <button class="sideclose" type="button" id="sideclose" aria-label="Tutup menu"><svg viewBox="0 0 24 24"
+                        aria-hidden="true">
+                        <path d="M6 6l12 12M18 6L6 18" />
+                    </svg></button>
+            </div>
+            <nav class="nav" id="nav" aria-label="Halaman"></nav>
+            <div class="userbox">
+                <span class="label">Masuk sebagai</span>
+                <b id="uemail">—</b>
+                <button class="btn ghost" type="button" id="logout">Keluar</button>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="pagehead">
+                <div class="titlebox">
+                    <button class="hamb" type="button" id="hamb" aria-label="Buka atau tutup menu" aria-controls="side"
+                        aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg></button>
+                    <div>
+                        <div class="mbrand"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M5 27C5 14 12 5 28 5c0 16-9 23-21 23" />
+                                <path d="M5 27c5-8 9-12 15-16" />
+                            </svg>Selada Keriting</div>
+                        <h1 id="ptitle">Ringkasan</h1>
+                        <p class="sub" id="psub"></p>
+                    </div>
+                </div>
+                <div class="headright">
+                    <span class="label" id="fresh">—</span>
+                    <div class="conn" id="conn" data-s="init" role="status"><span class="dot"></span><span
+                            id="connText">Menghubungkan…</span></div>
+                </div>
+            </header>
+
+            <div class="notice" id="notice" hidden>
+                <p>Menampilkan data contoh. Halaman ini tidak bisa membaca Firebase dari sini. Setelah dihosting
+                    (misalnya di Vercel) atau dibuka dari komputer, data sensor asli akan tampil.</p>
+                <button class="btn ghost" id="retry" type="button">Coba Firebase lagi</button>
+            </div>
+
+            <!-- ================= RINGKASAN ================= -->
+            <section class="page" id="p-ringkasan" hidden>
+                <div class="grid">
+                    <div class="col">
+                        <article class="panel" aria-labelledby="h-soil">
+                            <div class="panel-head">
+                                <h2 id="h-soil">Kelembapan tanah</h2><a class="link" href="#sensor">Detail sensor</a>
+                            </div>
+                            <div class="soil-top">
+                                <div class="big" id="soilVal">—<small>%</small></div>
+                                <div class="soil-side">
+                                    <span class="pill" id="soilPill">—</span>
+                                    <p class="hint" id="soilHint">Menunggu data dari sensor.</p>
+                                </div>
+                            </div>
+                            <div class="zones" id="zones"></div>
+                        </article>
+                        <div class="pair">
+                            <article class="panel metric" aria-labelledby="h-temp" style="--c:var(--temp)">
+                                <h2 id="h-temp" class="label">Suhu udara</h2>
+                                <div class="value" id="tempVal">—</div>
+                                <div class="spark" id="tempSpark"></div>
+                                <div class="range" id="tempRange">—</div>
+                            </article>
+                            <article class="panel metric" aria-labelledby="h-air" style="--c:var(--wet)">
+                                <h2 id="h-air" class="label">Kelembapan udara</h2>
+                                <div class="value" id="airVal">—</div>
+                                <div class="spark" id="airSpark"></div>
+                                <div class="range" id="airRange">—</div>
+                            </article>
+                        </div>
+                        <article class="panel" aria-labelledby="h-chart">
+                            <div class="panel-head">
+                                <h2 id="h-chart">Grafik 1 menit terakhir</h2>
+                                <div class="seg" id="ovSeg" role="group" aria-label="Pilih data grafik">
+                                    <button type="button" data-s="tanah" aria-pressed="true">Tanah</button>
+                                    <button type="button" data-s="suhu" aria-pressed="false">Suhu</button>
+                                    <button type="button" data-s="udara" aria-pressed="false">Udara</button>
+                                </div>
+                            </div>
+                            <div class="readout" id="ro-ov"></div>
+                            <div class="chart" id="ch-ov"></div>
+                        </article>
+                    </div>
+                    <aside class="col">
+                        <article class="panel" aria-labelledby="h-camsum">
+                            <div class="panel-head">
+                                <h2 id="h-camsum">Kamera</h2><a class="link" href="#kamera">Buka kamera</a>
+                            </div>
+                            <div class="thumb" id="camThumb">Kamera belum pernah dibuka di sesi ini.</div>
+                            <p class="msg" id="camSum" style="margin-top:8px">Belum terhubung</p>
+                        </article>
+                        <article class="panel" aria-labelledby="h-alsum">
+                            <div class="panel-head">
+                                <h2 id="h-alsum">Peringatan terbaru</h2><a class="link" href="#peringatan">Semua</a>
+                            </div>
+                            <div class="events" id="alMini"></div>
+                        </article>
+                        <article class="panel" aria-labelledby="h-pump">
+                            <div class="panel-head">
+                                <h2 id="h-pump">Status pompa</h2><a class="link" href="#realtime">Realtime</a>
+                            </div>
+                            <div class="pumpbig" id="pumpState" role="status">—</div>
+                            <p class="msg" id="pumpSince">—</p>
+                            <p class="hint" id="pumpDetail">Menunggu data dari sensor.</p>
+                        </article>
+                        <article class="panel" aria-labelledby="h-sys">
+                            <div class="panel-head">
+                                <h2 id="h-sys">Sistem</h2>
+                            </div>
+                            <dl>
+                                <dt>Pompa air</dt>
+                                <dd id="sysPump">—</dd>
+                                <dt>Data terakhir</dt>
+                                <dd id="sysLast">—</dd>
+                                <dt>Sumber</dt>
+                                <dd id="sysSrc">—</dd>
+                                <dt>Siklus pompa</dt>
+                                <dd id="sysCycles">—</dd>
+                                <dt>Pompa menyala</dt>
+                                <dd id="sysOn">—</dd>
+                                <dt>Pembacaan sesi</dt>
+                                <dd id="sysCount">—</dd>
+                            </dl>
+                        </article>
+                    </aside>
+                </div>
+            </section>
+
+            <!-- ================= SENSOR ================= -->
+            <section class="page" id="p-sensor" hidden>
+                <div class="col">
+                    <div class="toolbar">
+                        <div class="seg" id="winSeg" role="group" aria-label="Rentang waktu">
+                            <button type="button" data-n="60" aria-pressed="true">1 menit</button>
+                            <button type="button" data-n="120" aria-pressed="false">2 menit</button>
+                            <button type="button" data-n="300" aria-pressed="false">5 menit</button>
+                        </div>
+                        <span class="msg" id="winInfo"></span>
+                    </div>
+                    <article class="panel">
+                        <div class="panel-head">
+                            <h2>Kelembapan tanah</h2>
+                        </div>
+                        <div class="stats" id="st-tanah"></div>
+                        <div class="readout" id="ro-tanah"></div>
+                        <div class="chart" id="ch-tanah"></div>
+                    </article>
+                    <article class="panel">
+                        <div class="panel-head">
+                            <h2>Suhu udara</h2>
+                        </div>
+                        <div class="stats" id="st-suhu"></div>
+                        <div class="readout" id="ro-suhu"></div>
+                        <div class="chart" id="ch-suhu"></div>
+                    </article>
+                    <article class="panel">
+                        <div class="panel-head">
+                            <h2>Kelembapan udara</h2>
+                        </div>
+                        <div class="stats" id="st-udara"></div>
+                        <div class="readout" id="ro-udara"></div>
+                        <div class="chart" id="ch-udara"></div>
+                    </article>
+                    <div class="pair" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))">
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Waktu di tiap zona tanah</h2>
+                            </div>
+                            <div id="zoneShare"></div>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Suhu dan kelembapan udara</h2><span class="msg" id="corr"></span>
+                            </div>
+                            <div class="chart" id="ch-scatter" style="--c:var(--wet)"></div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= KAMERA ================= -->
+            <section class="page" id="p-kamera" hidden>
+                <div class="grid">
+                    <div class="col">
+                        <article class="panel">
+                            <div class="camview" id="camview">
+                                <span class="livebadge" id="livebadge" hidden>LIVE</span>
+                                <img id="camimg" alt="Tampilan kamera selada" hidden>
+                                <div class="camstate" id="camstate"></div>
+                                <span class="camhint">Scroll = zoom · seret = geser · klik 2× = zoom cepat</span>
+                                <div class="camzoom" id="camzoom" role="group" aria-label="Zoom kamera">
+                                    <button type="button" id="zOut" aria-label="Perkecil (zoom out)">−</button>
+                                    <button type="button" id="zLvl" aria-label="Atur ulang zoom ke 100%">100%</button>
+                                    <button type="button" id="zIn" aria-label="Perbesar (zoom in)">+</button>
+                                    <button type="button" id="zFs" aria-label="Layar penuh">
+                                        <svg class="ic-enter" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+                                        </svg>
+                                        <svg class="ic-exit" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="camtools">
+                                <button class="btn" type="button" id="camSnap">Ambil foto</button>
+                                <button class="btn ghost" type="button" id="camReload">Muat ulang</button>
+                                <button class="btn ghost" type="button" id="camFull">Layar penuh</button>
+                                <button class="btn ghost" type="button" id="camOff" hidden>Putuskan</button>
+                            </div>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Galeri foto sesi ini</h2><button class="btn ghost small" type="button"
+                                    id="galClear">Hapus semua</button>
+                            </div>
+                            <div class="gallery" id="gallery"></div>
+                            <p class="empty" id="galEmpty">Belum ada foto. Klik "Ambil foto" saat video tampil.</p>
+                        </article>
+                    </div>
+                    <aside class="col">
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Koneksi kamera</h2>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>IP kamera</b><span>IP stream di WiFi rumah (tampil di portal setelah
+                                        tersambung).</span></div>
+                                <div class="ctl"><input type="text" id="camip" inputmode="decimal" autocomplete="off"
+                                        placeholder="192.168.1.23"><button class="btn" type="button"
+                                        id="camGo">Hubungkan</button></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>IP portal</b><span>Alamat halaman pengaturan ESP32-CAM. Terpisah dari
+                                        IP
+                                        kamera.</span></div>
+                                <div class="ctl"><input type="text" id="portalip" inputmode="decimal" autocomplete="off"
+                                        placeholder="192.168.4.1"><button class="btn ghost" type="button"
+                                        id="portalSave">Simpan</button></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Cara tampil</b><span>Foto berkala lebih ringan untuk ESP32-CAM.</span>
+                                </div>
+                                <div class="ctl">
+                                    <div class="seg" id="camMode" role="group" aria-label="Cara tampil"><button
+                                            type="button" data-m="stream" aria-pressed="true">Video</button><button
+                                            type="button" data-m="foto" aria-pressed="false">Foto berkala</button></div>
+                                </div>
+                            </div>
+                            <div class="field" id="intRow">
+                                <div class="t"><b>Jeda foto</b><span>Waktu antar foto.</span></div>
+                                <div class="ctl"><select id="camInt">
+                                        <option value="1000">1 detik</option>
+                                        <option value="3000" selected>3 detik</option>
+                                        <option value="5000">5 detik</option>
+                                        <option value="10000">10 detik</option>
+                                    </select></div>
+                            </div>
+                            <div class="chips"
+                                style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px">
+                                <button class="btn ghost small" type="button" id="useAp">Portal: 192.168.4.1</button>
+                                <a class="link" id="portal" href="#" target="_blank" rel="noopener" hidden>Buka portal
+                                    kamera</a>
+                            </div>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Tampilan</h2><button class="btn ghost small" type="button" id="viewReset">Atur
+                                    ulang</button>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Kecerahan</b></div>
+                                <div class="ctl"><input type="range" id="vBr" min="50" max="170" value="100"
+                                        aria-label="Kecerahan"></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Kontras</b></div>
+                                <div class="ctl"><input type="range" id="vCt" min="50" max="170" value="100"
+                                        aria-label="Kontras"></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Zoom</b></div>
+                                <div class="ctl"><input type="range" id="vZm" min="100" max="400" value="100"
+                                        aria-label="Zoom"></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Cermin</b></div>
+                                <div class="ctl"><input class="sw" type="checkbox" id="vMir" aria-label="Cermin"></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Putar 180°</b><span>Jika kamera terpasang terbalik.</span></div>
+                                <div class="ctl"><input class="sw" type="checkbox" id="vRot"
+                                        aria-label="Putar 180 derajat"></div>
+                            </div>
+                        </article>
+                        <article class="panel">
+                            <p class="hint">Lampu flash diatur dari portal kamera. Stream menahan ESP32-CAM, jadi tombol
+                                flash di portal tidak merespons saat video berjalan. Pilih "Foto berkala" untuk membuka
+                                portal sambil memantau.</p>
+                        </article>
+                    </aside>
+                </div>
+            </section>
+
+            <!-- ================= RIWAYAT ================= -->
+            <section class="page" id="p-riwayat" hidden>
+                <article class="panel">
+                    <div class="toolbar" style="margin-bottom:14px">
+                        <label class="label" for="fStatus">Status</label>
+                        <select id="fStatus">
+                            <option value="all">Semua</option>
+                            <option value="dry">Kering</option>
+                            <option value="ok">Normal</option>
+                            <option value="wet">Basah</option>
+                        </select>
+                        <label class="label" for="fRange">Rentang</label>
+                        <select id="fRange">
+                            <option value="0">Seluruh sesi</option>
+                            <option value="60">1 menit</option>
+                            <option value="300">5 menit</option>
+                            <option value="900">15 menit</option>
+                            <option value="3600">1 jam</option>
+                        </select>
+                        <label class="label" for="fAgg">Tampilan</label>
+                        <select id="fAgg">
+                            <option value="0">Per pembacaan</option>
+                            <option value="1">Rata-rata per menit</option>
+                        </select>
+                    </div>
+                    <div class="stats" id="hsum"></div>
+                    <div class="tablewrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th aria-sort="descending" data-k="t"><button type="button">Waktu</button></th>
+                                    <th data-k="suhu"><button type="button" id="thSuhu">Suhu</button></th>
+                                    <th data-k="udara"><button type="button">Udara</button></th>
+                                    <th data-k="tanah"><button type="button">Tanah</button></th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="pager">
+                        <span class="msg" id="hinfo"></span>
+                        <div class="toolbar">
+                            <button class="btn ghost small" type="button" id="hPrev">Sebelumnya</button>
+                            <button class="btn ghost small" type="button" id="hNext">Berikutnya</button>
+                        </div>
+                    </div>
+                    <div class="toolbar" style="margin-top:14px">
+                        <button class="btn" type="button" id="csvCopy">Salin CSV</button>
+                        <button class="btn ghost" type="button" id="csvDl">Unduh CSV</button>
+                        <button class="btn ghost" type="button" id="hClear">Hapus riwayat sesi</button>
+                        <span class="msg">CSV berisi baris sesuai filter di atas.</span>
+                    </div>
+                    <textarea id="csvbox" hidden readonly aria-label="Isi CSV" style="margin-top:12px"></textarea>
+                </article>
+            </section>
+
+            <!-- ================= PERINGATAN ================= -->
+            <section class="page" id="p-peringatan" hidden>
+                <div class="grid">
+                    <article class="panel">
+                        <div class="panel-head">
+                            <h2>Kejadian</h2>
+                            <div class="toolbar">
+                                <div class="seg" id="alSeg" role="group" aria-label="Filter kejadian"><button
+                                        type="button" data-f="all" aria-pressed="true">Semua</button><button
+                                        type="button" data-f="unread" aria-pressed="false">Belum dibaca</button></div>
+                                <button class="btn ghost small" type="button" id="alRead">Tandai dibaca</button>
+                                <button class="btn ghost small" type="button" id="alClear">Hapus</button>
+                            </div>
+                        </div>
+                        <div class="events" id="alList"></div>
+                    </article>
+                    <aside class="col">
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Aturan peringatan</h2>
+                            </div>
+                            <div id="rules"></div>
+                            <p class="msg" style="margin-top:10px">Peringatan dihitung di halaman ini dari data yang
+                                diterima. Tidak ada pesan yang dikirim ke luar.</p>
+                        </article>
+                    </aside>
+                </div>
+            </section>
+
+            <!-- ================= PENGATURAN ================= -->
+            <section class="page" id="p-pengaturan" hidden>
+                <div class="grid">
+                    <div class="col">
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Sumber data</h2>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>URL Firebase</b><span>Alamat data sensor, berakhiran .json.</span>
+                                </div>
+                                <div class="ctl"><input type="text" id="setUrl" autocomplete="off"
+                                        spellcheck="false"><button class="btn ghost" type="button" id="testBtn">Uji
+                                        koneksi</button></div>
+                            </div>
+                            <p class="msg" id="testMsg" role="status"></p>
+                            <div class="field">
+                                <div class="t"><b>Interval pembaruan</b><span>Seberapa sering dashboard membaca
+                                        data.</span></div>
+                                <div class="ctl"><select id="setPoll">
+                                        <option value="1000">1 detik</option>
+                                        <option value="2000">2 detik</option>
+                                        <option value="5000">5 detik</option>
+                                    </select></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Data awal diambil</b><span>Jumlah pembacaan terakhir saat halaman
+                                        dibuka.</span></div>
+                                <div class="ctl"><select id="setFetchN">
+                                        <option value="60">60 (1 menit)</option>
+                                        <option value="300">300 (5 menit)</option>
+                                        <option value="600">600 (10 menit)</option>
+                                    </select></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Selalu pakai data contoh</b><span>Untuk latihan tampilan tanpa
+                                        perangkat.</span></div>
+                                <div class="ctl"><input class="sw" type="checkbox" id="setDemo"
+                                        aria-label="Selalu pakai data contoh"></div>
+                            </div>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Batas zona tanah</h2>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Kering di bawah</b><span>Acuan: ≤ 65% tanah kering, pompa ON. Samakan dengan firmware ESP32.</span></div>
+                                <div class="ctl"><input type="number" id="setDry" min="1" max="98" step="1">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Basah di atas</b><span>Acuan: ≥ 78% tanah basah, pompa OFF. Samakan dengan firmware ESP32.</span></div>
+                                <div class="ctl"><input type="number" id="setWet" min="2" max="99" step="1">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                            <p class="msg" id="zoneMsg" role="status">Mengubah batas hanya mengubah tampilan dan
+                                peringatan di dashboard. Pompa tetap mengikuti program di ESP32.</p>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Machine Learning &amp; pengolahan data</h2>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Zona waktu model</b><span>Dipakai untuk fitur jam-dalam-hari LSTM. Samakan dengan lokasi sensor.</span></div>
+                                <div class="ctl"><input type="text" id="setTz" autocomplete="off" spellcheck="false" placeholder="Asia/Jakarta"></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Data latih LSTM (hari terakhir)</b><span>Riwayat Firebase yang diunduh untuk training. Disarankan 14 hari.</span></div>
+                                <div class="ctl"><input type="number" id="setMlDays" min="3" max="60" step="1"></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Alamat server Python</b><span>Pengolahan data (Firebase, per jam, jendela, metrik, status). Kosongkan bila halaman dibuka dari server Python yang sama; bila dibuka dari berkas isi mis. http://localhost:5000.</span></div>
+                                <div class="ctl"><input type="text" id="setApi" autocomplete="off" spellcheck="false" placeholder="http://localhost:5000"></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Mesin &amp; penyimpanan</b><span>Model LSTM dan CNN dilatih serta dijalankan di browser (TensorFlow.js) dan disimpan di browser ini; data diolah server Python.</span></div>
+                                <div class="ctl"><button class="btn ghost" type="button" id="mlTest">Cek TensorFlow.js &amp; server</button><button class="btn ghost" type="button" id="mlClear">Hapus model &amp; cache</button></div>
+                            </div>
+                            <p class="msg" id="mlMsg" role="status"></p>
+                        </article>
+                    </div>
+                    <aside class="col">
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Tampilan</h2>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Satuan suhu</b></div>
+                                <div class="ctl"><select id="setUnit">
+                                        <option value="C">Celsius (°C)</option>
+                                        <option value="F">Fahrenheit (°F)</option>
+                                    </select></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Format jam</b></div>
+                                <div class="ctl"><select id="setClock">
+                                        <option value="24">24 jam</option>
+                                        <option value="12">12 jam</option>
+                                    </select></div>
+                            </div>
+                            <div class="field">
+                                <div class="t"><b>Tema</b></div>
+                                <div class="ctl"><select id="setTheme">
+                                        <option value="system">Ikuti perangkat</option>
+                                        <option value="light">Terang</option>
+                                        <option value="dark">Gelap</option>
+                                    </select></div>
+                            </div>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Data tersimpan</h2>
+                            </div>
+                            <p class="hint">Pengaturan dan IP kamera disimpan di browser ini saja.</p>
+                            <div class="toolbar" style="margin-top:12px">
+                                <button class="btn ghost" type="button" id="setReset">Kembalikan bawaan</button>
+                            </div>
+                        </article>
+                    </aside>
+                </div>
+            </section>
+
+            <!-- ================= PANDUAN ================= -->
+            <section class="page" id="p-panduan" hidden>
+                <div class="grid">
+                    <div class="col">
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Cara kerja</h2>
+                            </div>
+                            <div class="flow"><span class="node">ESP32 sensor</span><span class="arrow">WiFi, tiap 1
+                                    detik →</span><span class="node">Firebase</span><span class="arrow">dibaca
+                                    →</span><span class="node">Dashboard</span></div>
+                            <div class="flow"><span class="node">ESP32-CAM</span><span class="arrow">HTTP, jaringan yang
+                                    sama →</span><span class="node">Dashboard</span></div>
+                            <p class="hint">Data sensor lewat internet lewat Firebase. Video kamera tidak lewat
+                                Firebase, jadi perangkat yang membuka dashboard harus satu jaringan dengan kamera.</p>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Langkah pemasangan</h2>
+                            </div>
+                            <ol class="steps">
+                                <li>
+                                    <div><b>Nyalakan ESP32 sensor.</b> Bila belum punya WiFi tersimpan, LCD menampilkan
+                                        "WiFi: esp selada" dan hotspot bernama <code>esp selada keriting</code> aktif.
+                                    </div>
+                                </li>
+                                <li>
+                                    <div><b>Hubungkan HP atau laptop ke hotspot itu</b>, buka <code>192.168.4.1</code>,
+                                        pilih WiFi rumah atau hotspot, lalu simpan.</div>
+                                </li>
+                                <li>
+                                    <div><b>Cek LCD.</b> Setelah tersambung, LCD menampilkan alamat IP dan data mulai
+                                        terkirim ke Firebase tiap 1 detik.</div>
+                                </li>
+                                <li>
+                                    <div><b>Nyalakan ESP32-CAM.</b> Sambungkan ke WiFi <code>ESP32-CAM-SELADA</code>,
+                                        buka <code>192.168.4.1</code> (itulah IP portal), isi WiFi yang sama, dan catat
+                                        IP kamera yang muncul. IP kamera berbeda dari IP portal.
+                                    </div>
+                                </li>
+                                <li>
+                                    <div><b>Buka halaman Kamera</b> di dashboard ini, masukkan IP kamera tadi, lalu klik
+                                        Hubungkan. IP portal diisi di kolom terpisah (bawaan 192.168.4.1).</div>
+                                </li>
+                            </ol>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Pemecahan masalah</h2>
+                            </div>
+                            <details>
+                                <summary>Data sensor tidak muncul</summary>
+                                <p>Pastikan ESP32 sensor tersambung WiFi (LCD menampilkan IP), URL di Pengaturan sama
+                                    dengan URL di program, dan aturan baca Firebase mengizinkan akses. Gunakan "Uji
+                                    koneksi" di Pengaturan.</p>
+                            </details>
+                            <details>
+                                <summary>Status "Perangkat berhenti mengirim data"</summary>
+                                <p>Tidak ada data baru selama batas waktu di aturan Perangkat offline. Cek daya dan WiFi
+                                    ESP32 sensor.</p>
+                            </details>
+                            <details>
+                                <summary>Suhu atau udara tidak berubah</summary>
+                                <p>Program hanya memperbarui nilai bila DHT22 berhasil dibaca. Jika sensor gagal, nilai
+                                    lama tetap dikirim. Cek kabel DHT22 di pin 13.</p>
+                            </details>
+                            <details>
+                                <summary>Pompa terus menyala atau tidak pernah menyala</summary>
+                                <p>Kalibrasi sensor tanah memakai nilai kering 4000 dan basah 2800. Sesuaikan dengan
+                                    sensor Anda. Relay bersifat aktif LOW, jadi LOW berarti pompa menyala.</p>
+                            </details>
+                            <details>
+                                <summary>Video kamera tidak tampil</summary>
+                                <p>Kamera hanya melayani satu penonton. Tutup tab portal kamera, pastikan satu jaringan,
+                                    dan buka dashboard lewat http bila ada pesan konten tidak aman.</p>
+                            </details>
+                        </article>
+                    </div>
+                    <aside class="col">
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Pin ESP32 sensor</h2>
+                            </div>
+                            <div class="tablewrap">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td>LCD I2C 16×2</td>
+                                            <td>SDA 21, SCL 22, alamat 0x27</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Sensor tanah</td>
+                                            <td>GPIO 35 (analog)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>DHT22</td>
+                                            <td>GPIO 13</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Relay pompa</td>
+                                            <td>GPIO 26 (aktif LOW)</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Pin ESP32-CAM</h2>
+                            </div>
+                            <div class="tablewrap">
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td>Model</td>
+                                            <td>AI Thinker</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Flash LED</td>
+                                            <td>GPIO 4</td>
+                                        </tr>
+                                        <tr>
+                                            <td>LED status</td>
+                                            <td>GPIO 33 (aktif LOW)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Alamat video</td>
+                                            <td>/stream</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Alamat foto</td>
+                                            <td>/capture</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Port</td>
+                                            <td>80 dan 81</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+                        <article class="panel">
+                            <div class="panel-head">
+                                <h2>Format data Firebase</h2>
+                            </div>
+                            <pre>{
+  "suhu": 28.4,
+  "kelembapan_udara": 66,
+  "kelembapan_tanah": 72,
+  "status": "Normal"
+}</pre>
+                            <p class="hint" style="margin-top:8px">Satu entri baru ditambahkan ke
+                                <code>/kelompok2</code> setiap detik.
+                            </p>
+                        </article>
+                    </aside>
+                </div>
+            </section>
+
+            <!-- ================= FITUR ANALITIK & MACHINE LEARNING (isi dibuat oleh js/pages/*.js) ================= -->
+            <section class="page" id="p-realtime" hidden></section>
+            <section class="page" id="p-eksplorasi" hidden></section>
+            <section class="page" id="p-lstm" hidden></section>
+            <section class="page" id="p-cnn" hidden></section>
+            <section class="page" id="p-scan" hidden></section>
+        </div>
+    </div>
+
+    <div class="scrim" id="scrim"></div>
+    <div id="toasts" aria-live="polite"></div>
+
+    <!-- TensorFlow.js (dimuat dari CDN; butuh internet). MobileNet hanya untuk CNN transfer learning. -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+    <script src="js/lib/status.js"></script>
+    <script src="js/ml/config.js"></script>
+    <script src="js/ml/api.js"></script>
+    <script src="js/ml/lstm.js"></script>
+    <script src="js/ml/forecast.js"></script>
+    <script src="js/ml/cnn.js"></script>
+    <script src="js/ml/scan.js"></script>
+    <script src="js/lib/charts.js"></script>
+    <script src="js/lib/xlsx.js"></script>
+    <script src="js/lib/mlui.js"></script>
+    <script src="js/lib/imageinput.js"></script>
+    <script src="js/lib/settings-ml.js"></script>
+    <script src="js/pages/realtime.js"></script>
+    <script src="js/pages/explore.js"></script>
+    <script src="js/pages/lstm.js"></script>
+    <script src="js/pages/forecast.js"></script>
+    <script src="js/pages/cnn.js"></script>
+    <script src="js/pages/scan.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
