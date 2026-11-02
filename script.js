@@ -545,7 +545,7 @@
     }
 
     /* ================= Kamera ================= */
-    var cam = { mode: 'stream', interval: 3000, run: false, want: false, timer: 0, lastFrame: null };
+    var cam = { mode: 'stream', interval: 3000, run: false, want: false, timer: 0, lastFrame: null, retry: 0, pre: null };
     var camimg = $('#camimg'), camstate = $('#camstate');
     var CAMICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
     function camMsg(title, text) {
@@ -560,6 +560,13 @@
     function camUrl(path) { return 'http://' + S.camIp + path + (path.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(); }
     function camOk() { camimg.hidden = false; camstate.hidden = true; $('#livebadge').hidden = false; }
     function camFail() {
+        /* Stream ESP32-CAM sering putus sesaat: coba sambung ulang otomatis sebelum menyerah. */
+        if (cam.run && cam.retry < 5) {
+            cam.retry++; clearTimeout(cam.timer);
+            camMsg('Menyambung ulang…', 'Percobaan ' + cam.retry + ' dari 5.');
+            cam.timer = setTimeout(function () { if (cam.run) camLoad(); }, 800 * cam.retry);
+            return;
+        }
         cam.run = false; clearTimeout(cam.timer);
         camimg.hidden = true; $('#livebadge').hidden = true;
         camMsg('Video tidak bisa dimuat', location.protocol === 'https:'
@@ -568,22 +575,45 @@
     }
     function camStop() {
         cam.run = false; clearTimeout(cam.timer);
-        camimg.onload = null; camimg.onerror = null; camimg.removeAttribute('src');
+        if (cam.pre) { cam.pre.onload = null; cam.pre.onerror = null; cam.pre.src = ''; cam.pre = null; }
+        camimg.onload = null; camimg.onerror = null;
+        /* mengosongkan src menutup koneksi stream, supaya ESP32-CAM tidak tertahan */
+        camimg.removeAttribute('src');
         camimg.hidden = true; $('#livebadge').hidden = true;
+    }
+    /* Mode foto: muat frame berikutnya di Image terpisah (double-buffer),
+       baru ditukar setelah selesai. Tampilan tidak kosong/berkedip di antara foto. */
+    function camNextPhoto() {
+        if (!cam.run) return;
+        var im = new Image(); cam.pre = im;
+        im.decoding = 'async';
+        im.onload = function () {
+            if (!cam.run || cam.pre !== im) return;
+            camimg.src = im.src; cam.retry = 0; camOk();
+            cam.timer = setTimeout(camNextPhoto, cam.interval);
+        };
+        im.onerror = camFail;
+        im.src = camUrl('/capture');
+    }
+    function camLoad() {
+        if (cam.mode === 'stream') {
+            camimg.onerror = camFail;
+            camimg.onload = function () { cam.retry = 0; camOk(); };
+            camimg.decoding = 'async';
+            camimg.src = camUrl('/stream');
+        } else {
+            camimg.onerror = null; camimg.onload = null;
+            camNextPhoto();
+        }
     }
     function camStart() {
         if (!S.camIp) { camIdle(); return; }
-        camStop(); cam.run = true; cam.want = true;
+        camStop(); cam.run = true; cam.want = true; cam.retry = 0;
         camMsg('Menghubungkan kamera…', 'Memuat dari ' + S.camIp + '.');
         $('#camOff').hidden = false; updatePortalLink();
-        camimg.onerror = camFail;
-        if (cam.mode === 'stream') { camimg.onload = camOk; camimg.src = camUrl('/stream'); }
-        else {
-            camimg.onload = function () { camOk(); cam.timer = setTimeout(function () { if (cam.run) camimg.src = camUrl('/capture'); }, cam.interval); };
-            camimg.src = camUrl('/capture');
-        }
+        camLoad();
     }
-    function camEnter() { $('#camip').value = S.camIp || ''; $('#portalip').value = S.portalIp || ''; updatePortalLink(); if (cam.want && S.camIp) camStart(); else if (!cam.run) camIdle(); renderGallery(); }
+    function camEnter() { measureView(); $('#camip').value = S.camIp || ''; $('#portalip').value = S.portalIp || ''; updatePortalLink(); if (cam.want && S.camIp) camStart(); else if (!cam.run) camIdle(); renderGallery(); }
     function camLeave() {
         exitFull();
         try {
@@ -614,18 +644,27 @@
     /* Zoom: V.z = skala (1–4), V.x/V.y = geseran dalam piksel */
     var V = { z: 1, x: 0, y: 0 };
     function isFull() { var v = $('#camview'); return document.fullscreenElement === v || v.classList.contains('pseudo-full'); }
+    var viewW = 0, viewH = 0, viewQ = 0;
+    function measureView() { var v = $('#camview'); viewW = v.clientWidth; viewH = v.clientHeight; }
     function clampPan() {
-        var v = $('#camview'), mx = (V.z - 1) * v.clientWidth / 2, my = (V.z - 1) * v.clientHeight / 2;
+        var mx = (V.z - 1) * viewW / 2, my = (V.z - 1) * viewH / 2;
         V.x = Math.max(-mx, Math.min(mx, V.x)); V.y = Math.max(-my, Math.min(my, V.y));
     }
+    /* Semua perubahan tampilan dikumpulkan jadi satu kali tulis per frame layar. */
     function applyView() {
-        clampPan();
-        var br = $('#vBr').value, ct = $('#vCt').value;
-        camimg.style.filter = 'brightness(' + br + '%) contrast(' + ct + '%)';
-        camimg.style.transform = 'translate(' + V.x.toFixed(1) + 'px,' + V.y.toFixed(1) + 'px) scale(' + V.z + ')' + ($('#vMir').checked ? ' scaleX(-1)' : '') + ($('#vRot').checked ? ' rotate(180deg)' : '');
-        $('#zLvl').textContent = Math.round(V.z * 100) + '%';
-        $('#vZm').value = Math.round(V.z * 100);
-        $('#camview').classList.toggle('zoomed', V.z > 1);
+        if (viewQ) return;
+        viewQ = requestAnimationFrame(function () {
+            viewQ = 0;
+            if (!viewW) measureView();
+            clampPan();
+            var br = $('#vBr').value, ct = $('#vCt').value;
+            /* filter CSS pada MJPEG memaksa render ulang tiap frame: pasang hanya jika diubah */
+            camimg.style.filter = (br === '100' && ct === '100') ? '' : 'brightness(' + br + '%) contrast(' + ct + '%)';
+            camimg.style.transform = 'translate3d(' + V.x.toFixed(1) + 'px,' + V.y.toFixed(1) + 'px,0) scale(' + V.z + ')' + ($('#vMir').checked ? ' scaleX(-1)' : '') + ($('#vRot').checked ? ' rotate(180deg)' : '');
+            $('#zLvl').textContent = Math.round(V.z * 100) + '%';
+            $('#vZm').value = Math.round(V.z * 100);
+            $('#camview').classList.toggle('zoomed', V.z > 1);
+        });
     }
     function zoomTo(nz, cx, cy) {
         nz = Math.max(1, Math.min(4, nz));
@@ -637,7 +676,7 @@
     }
     function setFullUI() {
         var f = isFull();
-        $('#camview').classList.toggle('isfull', f);
+        $('#camview').classList.toggle('isfull', f); measureView();
         $('#zFs').setAttribute('aria-label', f ? 'Keluar layar penuh' : 'Layar penuh');
         $('#camFull').textContent = f ? 'Keluar layar penuh' : 'Layar penuh';
         applyView();
@@ -695,7 +734,7 @@
         function end(e) { delete ptrs[e.pointerId]; pinch = null; }
         v.addEventListener('pointerup', end); v.addEventListener('pointercancel', end);
         document.addEventListener('fullscreenchange', setFullUI);
-        window.addEventListener('resize', applyView);
+        window.addEventListener('resize', function () { measureView(); applyView(); });
         document.addEventListener('keydown', function (e) {
             var t = e.target && e.target.tagName;
             if (t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA') return;
