@@ -1,6 +1,0 @@
-backend/cache/
-backend/tests/
-__pycache__/
-*.pyc
-run.sh
-run.bat
