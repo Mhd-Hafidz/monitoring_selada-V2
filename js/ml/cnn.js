@@ -121,6 +121,19 @@
     }
     function cancelTraining() { TRAIN.cancel = true; if (TRAIN.model) TRAIN.model.stopTraining = true; }
 
+    /* Cadangan di browser: sama dengan backend/utils/evaluation.py classification(). */
+    function localClassification(yt, yp, names) {
+        var k = names.length, cm = [], ok = 0, per = {}, i, j;
+        for (i = 0; i < k; i++) { cm.push(new Array(k).fill(0)); }
+        for (i = 0; i < yt.length; i++) { cm[yt[i]][yp[i]]++; if (yt[i] === yp[i]) ok++; }
+        names.forEach(function (c, a) {
+            var tp = cm[a][a], fp = 0, fn = 0, sup = 0;
+            for (j = 0; j < k; j++) { if (j !== a) { fp += cm[j][a]; fn += cm[a][j]; } sup += cm[a][j]; }
+            var pr = tp + fp ? tp / (tp + fp) : 0, rc = tp + fn ? tp / (tp + fn) : 0;
+            per[c] = { precision: pr, recall: rc, f1: pr + rc ? 2 * pr * rc / (pr + rc) : 0, support: sup };
+        });
+        return { accuracy: yt.length ? ok / yt.length : null, n: yt.length, per_class: per, confusion_matrix: cm, classes: names.slice() };
+    }
     /* classes: {nama: [File,...]}; opt: {arch:'mobilenet'|'custom', epochs, batch, progress(info)} */
     async function train(classes, opt) {
         opt = opt || {};
@@ -202,7 +215,9 @@
             say({ phase: 'evaluasi' });
             var probs = tf.tidy(function () { return model.predict(xTe).argMax(1).dataSync(); });
             xTe.dispose();
-            var test = await window.SeladaAPI.post('/api/evaluate/classification', { y_true: Array.from(yTeIdx), y_pred: Array.from(probs), names: names });
+            var test;
+            try { test = await window.SeladaAPI.post('/api/evaluate/classification', { y_true: Array.from(yTeIdx), y_pred: Array.from(probs), names: names }); }
+            catch (apiErr) { test = localClassification(Array.from(yTeIdx), Array.from(probs), names); }   // server Python tidak bisa dihubungi / rute tidak ada: hitung di browser agar model tetap tersimpan
             try { await model.save(MODEL_URL); } catch (e) { throw new E('storage_failed', 'Model tidak bisa disimpan di browser (IndexedDB dinonaktifkan atau penuh): ' + ((e && e.message) || e)); }
             ensureClassStatus(names);
             var n = hist.loss.length, meta = {
